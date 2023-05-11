@@ -95,7 +95,11 @@
               document.body.append("No virtual machines in the namespace.");
             }
           })
-          .catch(err => console.log("Failed to get vmis: " + err));
+          .catch(err => {
+            console.error("Failed to get virtual machine instances: " + err);
+            document.getElementById('error-message').innerText = "Failed to get virtual machine instances: " + err;
+            document.getElementById('error-message').style.display = '';
+          });
        }
     </script>
   </meta>
@@ -105,5 +109,7 @@
 
     <table style="display: none;" id="vmis-table"><tbody id="vmis">
     </tbody></table>
+
+    <p id="error-message" style="display: none; color: red;"></p>
   </body>
 </html>
