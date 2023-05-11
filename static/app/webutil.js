@@ -210,7 +210,7 @@ export function injectParamIfMissing(path, param, value) {
 // IE11 support or polyfill promises and fetch in IE11.
 // resolve will receive an object on success, while reject
 // will receive either an event or an error on failure.
-export function fetchJSON(path) {
+export function fetchJSON(path, token) {
     return new Promise((resolve, reject) => {
         // NB: IE11 doesn't support JSON as a responseType
         const req = new XMLHttpRequest();
@@ -229,6 +229,10 @@ export function fetchJSON(path) {
                 reject(new Error("XHR got non-200 status while trying to load '" + path + "': " + req.status));
             }
         };
+
+        if (token) {
+            req.setRequestHeader('Authorization', 'Bearer ' + token);
+        }
 
         req.onerror = evt => reject(new Error("XHR encountered an error while trying to load '" + path + "': " + evt.message));
 
