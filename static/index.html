@@ -37,16 +37,24 @@
 
     <script type="module" crossorigin="anonymous">
       import * as WebUtil from "./app/webutil.js";
-      const apiPrefix = 'https://api.hsrn.nyu.edu/apis';
-      const apiPrefixWs = 'wss://api.hsrn.nyu.edu/apis';
+      const apiPrefix = 'https://api.hsrn.nyu.edu/';
+      const apiPrefixWs = 'wss://api.hsrn.nyu.edu/';
       const oidcDomain = 'dev-corelink.us.auth0.com';
       const oidcClientId = '4I8K54Hz4bKU3ei0issNzZU4OeQkRP7b';
       let accessToken = null;
 
+      let appPrefix = window.location.origin + window.location.pathname;
+      if(appPrefix.endsWith('index.html')) {
+        appPrefix = appPrefix.substring(0, appPrefix.length - 10);
+      }
+      if(appPrefix.endsWith('/')) {
+        appPrefix = appPrefix.substring(0, appPrefix.length - 1);
+      }
+
       document.getElementById('btn-login').innerText = 'Loading...';
 
       function login() {
-        window.location.href = 'https://' + oidcDomain + '/authorize?client_id=' + oidcClientId + '&redirect_uri=' + encodeURIComponent('http://192.168.1.71:8000/') + '&response_type=id_token&scope=openid+profile+email&nonce=' + new Date().valueOf();
+        window.location.href = 'https://' + oidcDomain + '/authorize?client_id=' + oidcClientId + '&redirect_uri=' + encodeURIComponent(appPrefix + '/') + '&response_type=id_token&scope=openid+profile+email&nonce=' + new Date().valueOf();
       }
 
       function checkAuth() {
@@ -60,7 +68,7 @@
           // Remove the query parameters
           window.history.replaceState({}, document.title, '/');
 
-          loadVMI();
+          load();
           return;
         }
 
@@ -70,7 +78,7 @@
           accessToken = cookie;
           console.log("Got token from cookie:", accessToken);
 
-          loadVMI();
+          load();
           return;
         }
 
@@ -81,20 +89,37 @@
       }
       window.addEventListener('load', checkAuth);
 
-      const namespace = WebUtil.getQueryVar('namespace', 'default');
-
-      function loadVMI() {
+      function load() {
         document.getElementById('btn-login').style.display = 'none';
-        WebUtil.fetchJSON(apiPrefix + '/kubevirt.io/v1alpha3/namespaces/' + namespace + '/virtualmachineinstances/', accessToken)
+        const namespace = WebUtil.getQueryVar('namespace', null);
+        if(namespace === null) {
+          WebUtil.fetchJSON(apiPrefix + 'api/v1/namespaces', accessToken)
+            .then((resp) => {
+              document.getElementById("ns-table").style.display = '';
+              resp.items.forEach(i => {
+                let tr = document.createElement('tr');
+                tr.innerHTML = "<td><a href=\"" + appPrefix + "/?namespace=" + i.metadata.name + "\">" + i.metadata.name + "</a></td>";
+                document.getElementById("ns").appendChild(tr);
+              });
+            });
+        } else {
+          loadVMI(namespace);
+        }
+      }
+
+      function loadVMI(namespace) {
+        WebUtil.fetchJSON(apiPrefix + 'apis/kubevirt.io/v1alpha3/namespaces/' + namespace + '/virtualmachineinstances/', accessToken)
           .then((resp) => {
             document.getElementById("vmis-table").style.display = '';
             resp.items.forEach(i => {
               let tr = document.createElement('tr');
-              tr.innerHTML="<td>" + i.metadata.namespace + "</td><td>" + i.metadata.name + "</td><td>" + String(i.status.phase) + "</td><td>" + String(i.status.interfaces !== undefined ? i.status.interfaces[0].ipAddress : '')  + "</td><td>" + String(i.status.nodeName !== undefined ? i.status.nodeName : '') + "</td><td><button class='button' " + String(i.status.phase =="Running" ? "" : "disabled")  + " onclick=\"window.open('vnc_lite.html?path=" + apiPrefixWs + "/subresources.kubevirt.io/v1alpha3/namespaces/" + i.metadata.namespace + "/virtualmachineinstances/" + i.metadata.name + "/vnc', 'novnc_window', 'resizable=yes,toolbar=no,location=no,status=no,scrollbars=no,menubar=no,width=1030,height=800')\">VNC</button></td>";
+              tr.innerHTML = "<td>" + i.metadata.name + "</td><td>" + String(i.status.phase) + "</td><td>" + String(i.status.interfaces !== undefined ? i.status.interfaces[0].ipAddress : '')  + "</td><td>" + String(i.status.nodeName !== undefined ? i.status.nodeName : '') + "</td><td><button class='button' " + String(i.status.phase =="Running" ? "" : "disabled")  + " onclick=\"window.open('vnc_lite.html?path=" + apiPrefixWs + "apis/subresources.kubevirt.io/v1alpha3/namespaces/" + i.metadata.namespace + "/virtualmachineinstances/" + i.metadata.name + "/vnc', 'novnc_window', 'resizable=yes,toolbar=no,location=no,status=no,scrollbars=no,menubar=no,width=1030,height=800')\">VNC</button></td>";
               document.getElementById("vmis").appendChild(tr);
             });
-            if (resp.items.length === 0) {
-              document.body.append("No virtual machines in the namespace.");
+            if(resp.items.length === 0) {
+              let tr = document.createElement('tr');
+              tr.innerHTML = "<td>No virtual machines in the namespace.</td>";
+              document.getElementById("vmis").appendChild(tr);
             }
           })
           .catch(err => {
@@ -109,8 +134,17 @@
   <body>
     <button id="btn-login" disable="true" disabled>Log in (requires JavaScript)</button>
 
-    <table style="display: none;" id="vmis-table"><tbody id="vmis">
-    </tbody></table>
+    <div style="display: none;" id="vmis-table">
+      <p>Virtual machines:</p>
+      <table><tbody id="vmis">
+      </tbody></table>
+    </div>
+
+    <div style="display: none;" id="ns-table">
+      <p>Pick your namespace:</p>
+      <table><tbody id="ns">
+      </tbody></table>
+    </div>
 
     <p id="error-message" style="display: none; color: red;"></p>
   </body>
