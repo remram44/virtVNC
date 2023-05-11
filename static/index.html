@@ -81,9 +81,11 @@
       }
       window.addEventListener('load', checkAuth);
 
+      const namespace = WebUtil.getQueryVar('namespace', 'default');
+
       function loadVMI() {
         document.getElementById('btn-login').style.display = 'none';
-        WebUtil.fetchJSON(apiPrefix + '/kubevirt.io/v1alpha3/virtualmachineinstances/', accessToken)
+        WebUtil.fetchJSON(apiPrefix + '/kubevirt.io/v1alpha3/namespaces/' + namespace + '/virtualmachineinstances/', accessToken)
           .then((resp) => {
             document.getElementById("vmis-table").style.display = '';
             resp.items.forEach(i => {
