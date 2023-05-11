@@ -1,0 +1,11 @@
+image: busybox
+
+pages:
+  stage: build
+  script:
+    - sh -c "mkdir public && cp -r \"\$@\" public/" -- *
+  artifacts:
+    paths:
+      - public
+  only:
+    - master
