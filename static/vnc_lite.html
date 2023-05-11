@@ -141,7 +141,7 @@
         const host = readQueryVariable('host', window.location.hostname);
         let port = readQueryVariable('port', window.location.port);
         const password = readQueryVariable('password', '');
-        const path = readQueryVariable('path', 'websockify');
+        const url = readQueryVariable('path', 'websockify');
 
         // | | |         | | |
         // | | | Connect | | |
@@ -149,22 +149,12 @@
 
         status("Connecting");
 
-        // Build the websocket URL used to connect
-        let url;
-        if (window.location.protocol === "https:") {
-            url = 'wss';
-        } else {
-            url = 'ws';
-        }
-        url += '://' + host;
-        if(port) {
-            url += ':' + port;
-        }
-        url += '/' + path;
-
         // Creating a new RFB object will start a new connection
+        const accessToken = document.cookie.split('; ').find((e) => e.startsWith('accessToken='))?.split('=')[1];
+        console.log("Using accessToken:", accessToken);
+        const subprotocol = 'base64url.bearer.authorization.k8s.io.' + btoa(accessToken).replace(/=+$/, '');
         rfb = new RFB(document.getElementById('screen'), url,
-                      { credentials: { password: password } });
+                      { wsProtocols: [subprotocol, 'base64.binary.k8s.io'] });
 
         // Add listeners to important events from the RFB module
         rfb.addEventListener("connect",  connectedToServer);
