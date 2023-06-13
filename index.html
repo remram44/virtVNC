@@ -63,7 +63,7 @@
         if(match && match[1]) {
           accessToken = match[1];
           document.cookie = 'accessToken=' + accessToken;
-          console.log("Got token from URI, set cookie:", accessToken);
+          console.log("Got token from URI, setting cookie");
 
           // Remove the query parameters
           window.history.replaceState({}, document.title, '/');
@@ -76,7 +76,7 @@
         const cookie = document.cookie.split('; ').find((e) => e.startsWith('accessToken='))?.split('=')[1];
         if(cookie) {
           accessToken = cookie;
-          console.log("Got token from cookie:", accessToken);
+          console.log("Got token from cookie");
 
           load();
           return;
