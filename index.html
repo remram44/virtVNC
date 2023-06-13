@@ -83,6 +83,7 @@
         }
 
         // Not logged in, show the button
+        document.getElementById('btn-login').style.display = '';
         document.getElementById('btn-login').innerText = 'Log in';
         document.getElementById('btn-login').disabled = false;
         document.getElementById('btn-login').addEventListener('click', login);
@@ -117,6 +118,10 @@
                 tr.innerHTML = "<td><a href=\"" + appPrefix + "/?namespace=" + i.metadata.name + "\">" + i.metadata.name + "</a></td>";
                 document.getElementById("ns").appendChild(tr);
               });
+            } else if(req.status === 401) {
+              console.log("Got 401, unsetting cookie");
+              document.cookie = 'accessToken=';
+              checkAuth();
             } else {
               showError("Error listing namespaces: HTTP " + req.status);
             }
@@ -153,6 +158,10 @@
               tr.innerHTML = "<td>No virtual machines in the namespace.</td>";
               document.getElementById("vmis").appendChild(tr);
             }
+          } else if(req.status === 401) {
+            console.log("Got 401, unsetting cookie");
+            document.cookie = 'accessToken=';
+            checkAuth();
           } else {
             showError("Failed to get virtual machine instances: HTTP " + req.status);
           }
